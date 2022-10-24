@@ -4,7 +4,9 @@
 
 import ast
 import sys
+from textwrap import dedent
 from contextlib import contextmanager
+import executing
 import colorama
 from pygments import highlight
 from pygments.formatters import Terminal256Formatter
@@ -12,6 +14,40 @@ from pygments.lexers import PythonLexer, Python3Lexer
 from .coloring import SolarizedDark
 
 PYTHON2 = (sys.version_info[0] == 2)
+
+
+class NoAvailableSourceError(OSError):
+    """
+    Occurs if the source code needed for parsing and analysis cannot be found or accessed.
+    This can occur when:
+      - check() is called inside a REPL or interactive shell,
+        for example from the command line (CLI) or with the python -i command.
+      - The source code is corrupted and/or packaged, for example with PyInstaller.
+      - The underlying source code has changed at runtime.
+    """
+
+    infoMessage = (
+        'Failed to access the underlying source code for analysis.'
+        'Is check() called in a REPL (e.g. from the command line),'
+        'in a frozen application (e.g. packaged with PyInstaller),'
+        'or has the underlying source code changed at runtime?')
+
+
+class Source(executing.Source):
+    """
+    Processes the source code of the file and its associated metadata.
+    """
+
+    def get_text_with_indentation(self, node):
+        """
+        Gets indented text
+        """
+        result = self.asttokens().get_text(node)
+        if '\n' in result:
+            result = ' ' * node.first_token.start[1] + result
+            result = dedent(result)
+        result = result.strip()
+        return result
 
 
 def bind_static_variable(name, value):
@@ -72,17 +108,9 @@ def colorized_stderr_print(string):
         stderr_print(colored)
 
 
-class NoAvailableSourceError(OSError):
+def call_or_value(obj):
     """
-    Occurs if the source code needed for parsing and analysis cannot be found or accessed.
-    This can occur when:
-      - check() is called inside a REPL or interactive shell,
-        for example from the command line (CLI) or with the python -i command.
-      - The source code is corrupted and/or packaged, for example with PyInstaller.
-      - The underlying source code has changed at runtime.
+    If the object is a callable — calls it
+    If not — returns its value
     """
-    infoMessage = (
-        'Failed to access the underlying source code for analysis.'
-        'Is check() called in a REPL (e.g. from the command line),'
-        'in a frozen application (e.g. packaged with PyInstaller),'
-        'or has the underlying source code changed at runtime?')
+    return obj() if callable(obj) else obj
