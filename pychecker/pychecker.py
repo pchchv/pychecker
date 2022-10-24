@@ -70,3 +70,19 @@ def colorized_stderr_print(string):
     colored = colorize(string)
     with support_terminal_colors_in_windows():
         stderr_print(colored)
+
+
+class NoAvailableSourceError(OSError):
+    """
+    Occurs if the source code needed for parsing and analysis cannot be found or accessed.
+    This can occur when:
+      - check() is called inside a REPL or interactive shell,
+        for example from the command line (CLI) or with the python -i command.
+      - The source code is corrupted and/or packaged, for example with PyInstaller.
+      - The underlying source code has changed at runtime.
+    """
+    infoMessage = (
+        'Failed to access the underlying source code for analysis.'
+        'Is check() called in a REPL (e.g. from the command line),'
+        'in a frozen application (e.g. packaged with PyInstaller),'
+        'or has the underlying source code changed at runtime?')
