@@ -114,3 +114,21 @@ def call_or_value(obj):
     If not — returns its value
     """
     return obj() if callable(obj) else obj
+
+
+def prefix_lines_after_first(prefix, string):
+    """
+    Adds prefix lines
+    """
+    lines = string.splitlines(True)
+    for i in range(1, len(lines)):
+        lines[i] = prefix + lines[i]
+    return ''.join(lines)
+
+
+def indented_lines(prefix, string):
+    """
+    Adds indents
+    """
+    lines = string.splitlines()
+    return [prefix + lines[0]] + [' ' * len(prefix) + line for line in lines[1:]]
