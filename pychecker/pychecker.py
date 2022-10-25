@@ -6,6 +6,8 @@ import ast
 import sys
 from textwrap import dedent
 from contextlib import contextmanager
+import functools
+import pprint
 import executing
 import colorama
 from pygments import highlight
@@ -13,7 +15,9 @@ from pygments.formatters import Terminal256Formatter
 from pygments.lexers import PythonLexer, Python3Lexer
 from .coloring import SolarizedDark
 
+
 PYTHON2 = (sys.version_info[0] == 2)
+DEFAULT_ARG_TO_STRING_FUNCTION = pprint.pformat
 
 
 class NoAvailableSourceError(OSError):
@@ -132,3 +136,51 @@ def indented_lines(prefix, string):
     """
     lines = string.splitlines()
     return [prefix + lines[0]] + [' ' * len(prefix) + line for line in lines[1:]]
+
+
+def format_pair(prefix, arg, value):
+    """
+    Formatting argument-value pairs
+    """
+    arg_lines = indented_lines(prefix, arg)
+    value_prefix = arg_lines[-1] + ': '
+    looks_like_a_string = value[0] + value[-1] in ["''", '""']
+    if looks_like_a_string:  # Align the start of multiline strings
+        value = prefix_lines_after_first(' ', value)
+    value_lines = indented_lines(value_prefix, value)
+    lines = arg_lines[:-1] + value_lines
+    return '\n'.join(lines)
+
+
+def single_dispatch(func):
+    """
+    Converting a function into a general function
+    """
+    if "singledispatch" not in dir(functools):
+        def unsupport_py2(*args, **kwargs):
+            raise NotImplementedError(
+                "functools.singledispatch is missing in " + sys.version
+            )
+        func.register = func.unregister = unsupport_py2
+        return func
+    func = functools.singledispatch(func)
+    closure = dict(zip(func.register.__code__.co_freevars,
+                   func.register.__closure__))
+    registry = closure['registry'].cell_contents
+    dispatch_cache = closure['dispatch_cache'].cell_contents
+
+    def unregister(cls):
+        del registry[cls]
+        dispatch_cache.clear()
+    func.unregister = unregister
+    return func
+
+
+@single_dispatch
+def convert_argument_to_string(obj):
+    """
+    Converts object to a string
+    """
+    string = DEFAULT_ARG_TO_STRING_FUNCTION(obj)
+    string = string.replace('\\n', '\n')
+    return string
