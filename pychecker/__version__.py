@@ -7,7 +7,7 @@ License: MIT
 
 __title__ = 'pychecker'
 __license__ = 'MIT'
-__version__ = '0.1.0'
+__version__ = '1.0.0'
 __author__ = 'pchchv'
 __contact__ = 'ipchchv@gmail.com'
 __url__ = 'https://github.com/pchchv/pychecker'

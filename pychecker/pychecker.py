@@ -170,11 +170,11 @@ def single_dispatch(func):
     Converting a function into a general function
     """
     if "singledispatch" not in dir(functools):
-        def unsupport_py2(*args, **kwargs):
+        def unsupported_py2(*args, **kwargs):
             raise NotImplementedError(
                 "functools.singledispatch is missing in " + sys.version
             )
-        func.register = func.unregister = unsupport_py2
+        func.register = func.unregister = unsupported_py2
         return func
     func = functools.singledispatch(func)
     closure = dict(zip(func.register.__code__.co_freevars,
@@ -274,7 +274,7 @@ class PyCheckDebugger:
 
     def _construct_argument_output(self, prefix, context, pairs):
         def arg_prefix(arg):
-            return '%s: ' % arg
+            return f'{arg}: '
         pairs = [(arg, self.arg_to_string_function(val)) for arg, val in pairs]
         # For cleaner output, if <arg> is a literal, such as 3, 'string', b'bytes, etc.
         # output only the value, not the argument and value,
@@ -317,14 +317,14 @@ class PyCheckDebugger:
         filename, line_number, parent_function = self._get_context(
             call_frame, call_node)
         if parent_function != '<module>':
-            parent_function = '%s()' % parent_function
-        context = '%s:%s in %s' % (filename, line_number, parent_function)
+            parent_function = f'{parent_function}()'
+        context = f'{filename}:{line_number} in {parent_function}'
         return context
 
     def _format_time(self):
         now = datetime.now()
         formatted = now.strftime('%H:%M:%S.%f')[:-3]
-        return ' at %s' % formatted
+        return f' at {formatted}'
 
     def _get_context(self, call_frame, call_node):
         line_number = call_node.lineno
@@ -343,7 +343,7 @@ class PyCheckDebugger:
 
     def disable(self):
         """
-        Disnables the class
+        Disables the class
         """
         self.enabled = False
 
